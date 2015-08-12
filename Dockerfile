@@ -57,7 +57,8 @@ RUN         apt-get install -y software-properties-common && \
 RUN         pip install awscli boto boto3 moto six futures \
                 pillow flask gunicorn Click Shapely python-memcached \
                 pylibmc nose coverage tox Cython Pygments alabaster \
-                Sphinx sphinxcontrib-httpdomain
+                Sphinx sphinxcontrib-httpdomain \
+                scikit-image
 
 #
 # Check installed software
