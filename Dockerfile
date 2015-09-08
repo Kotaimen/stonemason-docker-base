@@ -6,8 +6,8 @@ ENV         DEBIAN_FRONTEND noninteractive
 #
 # HACK: Speed local build by using local apt sources
 #
-RUN         mv /etc/apt/sources.list /etc/apt/sources.list.back && \
-            sed s/archive.ubuntu.com/ap-northeast-1.ec2.archive.ubuntu.com/ /etc/apt/sources.list.back > /etc/apt/sources.list
+# RUN         mv /etc/apt/sources.list /etc/apt/sources.list.back && \
+            # sed s/archive.ubuntu.com/ap-northeast-1.ec2.archive.ubuntu.com/ /etc/apt/sources.list.back > /etc/apt/sources.list
 # RUN         cat /etc/apt/sources.list
 
 
