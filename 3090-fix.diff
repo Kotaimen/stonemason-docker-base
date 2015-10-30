@@ -1,0 +1,88 @@
+From 68c82afe29c99fdcea3d27376137851a20b1f715 Mon Sep 17 00:00:00 2001
+From: Nikola Kovacs <nikola.kovacs@gmail.com>
+Date: Sat, 24 Oct 2015 13:17:02 +0200
+Subject: [PATCH] Fix std::string errors in GCC 5.2.1
+
+---
+ include/mapnik/util/variant.hpp | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/include/mapnik/util/variant.hpp b/include/mapnik/util/variant.hpp
+index 1000887..c0ec005 100644
+--- a/include/mapnik/util/variant.hpp
++++ b/include/mapnik/util/variant.hpp
+@@ -25,7 +25,6 @@
+ 
+ #include <mapnik/config.hpp>
+ 
+-#include <utility> // swap
+ #include <typeinfo>
+ #include <type_traits>
+ #include <stdexcept> // runtime_error
+@@ -595,16 +594,16 @@ public:
+         helper_type::move(old.type_index, &old.data, &data);
+     }
+ 
+-    friend void swap(variant<Types...> & first, variant<Types...> & second)
++    friend void copy(variant<Types...> & target, variant<Types...> & source)
+     {
+-        using std::swap; //enable ADL
+-        swap(first.type_index, second.type_index);
+-        swap(first.data, second.data);
++        helper_type::destroy(target.type_index, &target.data);
++        helper_type::copy(source.type_index, &source.data, &target.data);
++        target.type_index = source.type_index;
+     }
+ 
+     VARIANT_INLINE variant<Types...>& operator=(variant<Types...> other)
+     {
+-        swap(*this, other);
++        copy(*this, other);
+         return *this;
+     }
+ 
+@@ -614,7 +613,7 @@ public:
+     VARIANT_INLINE variant<Types...>& operator=(T && rhs) noexcept
+     {
+         variant<Types...> temp(std::forward<T>(rhs));
+-        swap(*this, temp);
++        copy(*this, temp);
+         return *this;
+     }
+ 
+@@ -623,7 +622,7 @@ public:
+     VARIANT_INLINE variant<Types...>& operator=(T const& rhs)
+     {
+         variant<Types...> temp(rhs);
+-        swap(*this, temp);
++        copy(*this, temp);
+         return *this;
+     }
+ 
+-- 
+1.8.4.2
+
+From 40cd4541e871417c6935e539cb8d1df00c3e4714 Mon Sep 17 00:00:00 2001
+From: Nikola Kovacs <nikola.kovacs@gmail.com>
+Date: Mon, 26 Oct 2015 22:40:14 +0100
+Subject: [PATCH] don't leave target in invalid state in case copy throws
+
+---
+ include/mapnik/util/variant.hpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/include/mapnik/util/variant.hpp b/include/mapnik/util/variant.hpp
+index c0ec005..9366587 100644
+--- a/include/mapnik/util/variant.hpp
++++ b/include/mapnik/util/variant.hpp
+@@ -597,6 +597,7 @@ public:
+     friend void copy(variant<Types...> & target, variant<Types...> & source)
+     {
+         helper_type::destroy(target.type_index, &target.data);
++        target.type_index = detail::invalid_value;
+         helper_type::copy(source.type_index, &source.data, &target.data);
+         target.type_index = source.type_index;
+     }
+-- 
+1.8.4.2
+
