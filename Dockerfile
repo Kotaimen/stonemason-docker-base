@@ -38,8 +38,10 @@ RUN         set -x \
                 python3-skimage \
                 python3-pylibmc \
                 python3-pil \
-                libpq5 \
-                webp \
+                libwebp5 \
+                libpng3 \
+                libjpeg62 \
+                libtiff5 \
                 imagemagick \
                 cython3 \
                 gdal-bin \
@@ -47,19 +49,23 @@ RUN         set -x \
                 python3-gdal
 
 #
-# Build python-mapnik (PPA is broken)
+# Build python-mapnik form source, since Mapnik's pip package only supports python2,
+# and their official PPA is broken.  Hopefully this will be fixed in ubuntu-16.04
 #
-
-# NOTE : Requires at least 8GB memory for 2 cores and 16GB on 4 cores,
-#        through 16 cores requires only 32GB memory.
+# WARNING: Very slow!!!, and memory hungry using GCC:
+#   - 1~2 cores: 8GB
+#   - 4~8 cores: 16GB
+#   - >=16 cores: 32GB
+#
+# Requires freetype2.6 otherwise Google Noto CJK fonts don't get auto hinting.
 
 WORKDIR     /tmp
 
 ENV         FREETYPE_VERSION=VER-2-6-1 \
             MAPNIK_VERSION=v3.0.8
 
+# Fixes https://github.com/mapnik/mapnik/issues/3090
 COPY        3090-fix.diff ./
-
 
 RUN         set -x \
             && DEV_PACKAGES="python3-cairo-dev \
@@ -72,15 +78,17 @@ RUN         set -x \
                 libboost-system-dev \
                 libboost-thread-dev \
                 libz-dev \
-                libharfbuzz-dev \
                 libwebp-dev \
                 liblcms2-dev  \
                 libjpeg-dev \
+                libpng-dev \
+                libwebp-dev \
                 libtiff-dev \
                 libproj-dev \
                 libgeos-dev \
                 libgdal-dev \
                 libicu-dev \
+                libharfbuzz-dev \
                 libfreetype6-dev \
                 libsqlite3-dev \
                 libpq-dev \
@@ -93,7 +101,7 @@ RUN         set -x \
             && git checkout ${FREETYPE_VERSION} \
             && ./autogen.sh \
             && ./configure \
-            && ./scons/scons.py -j `nproc` \
+            && make -j `nproc` \
             && make install \
 
             && cd .. \
@@ -110,34 +118,35 @@ RUN         set -x \
             && python3.5 setup.py install \
             && cd /tmp && rm -rvf *
 
-
 #
-# Patch gdal data files, see
+# Patch gdal data files, see:
 #   https://launchpad.net/ubuntu/trusty/+source/gdal/+copyright
 RUN         curl -SL http://cdn.masonmaps.me/dist/gdal-1.11.3/data/esri_extra.wkt > /usr/share/gdal/1.11/esri_extra.wkt
 
 #
-# Install pip packages with no strict version requirement
+# Install latest Pillow
 #
-RUN         pip3 install -q \
-                boto3 \
-                six \
-                futures \
-                flask \
-                gunicorn \
-                Click \
-                nose \
-                sphinx \
-                tox
+RUN         pip3 install --upgrade pillow
 
+#
+# Test mapnik and imagemagick
+#
 RUN         set -x \
-            && python3.5 -c 'import gdal; print("GDAL Version:", gdal.VersionInfo())' \
-            && python3.5 -c 'import mapnik; print("Mapnik Version:", mapnik.mapnik_version())' \
-            && python3.5 -c 'import os, mapnik; print("Mapnik Plugins: ", list(mapnik.DatasourceCache.plugin_names()))' \
+            && echo 'import gdal; \
+                import mapnik; \
+                import PIL; \
+                from pprint import pprint; \
+                print("GDAL Version:"); \
+                print(gdal.VersionInfo()); \
+                print("Mapnik Version:"); \
+                print(mapnik.mapnik_version()); \
+                print("Mapnik Plugins:"); \
+                pprint(list(mapnik.DatasourceCache.plugin_names())); \
+                print("Pillow Version:"); \
+                print(PIL.PILLOW_VERSION); \
+                print("Pillow Plugins:"); \
+                pprint(PIL._plugins);' > /tmp/test.py \
+            && python3.5 /tmp/test.py \
             && convert --version \
-            && python3.5 -c 'import PIL; print("Pillow Version:", PIL.VERSION, PIL.PILLOW_VERSION)' \
-            && convert rose: /tmp/rose.jpg \
-            && convert rose: /tmp/rose.png \
-            && convert rose: /tmp/rose.webp \
-            && rm /tmp/rose*
+            && rm /tmp/test.py
 
