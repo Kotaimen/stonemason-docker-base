@@ -1,4 +1,4 @@
-FROM        ubuntu:15.10
+FROM        ubuntu-debootstrap:15.10
 MAINTAINER  Kotaimen <kotaimen.c@gmail.com>
 LABEL       Description="Stonemason base image"
 ENV         DEBIAN_FRONTEND noninteractive
@@ -23,52 +23,54 @@ ENV         LANG=en_US.UTF-8 \
 #
 RUN         set -x \
             &&  apt-get -q update \
-            &&  apt-get -yq install \
+            &&  apt-get -yq --no-install-recommends install \
                 curl \
                 unzip \
-                make \
-                automake \
-                libtool \
-                git \
-                python3.5 \
-                python3.5-dev \
-                python3-pip \
-                python3-scipy \
-                python3-numpy \
-                python3-skimage \
-                python3-pylibmc \
-                python3-pil \
+                python \
+                cython \
+                python-dev \
+                python-pip \
+                python-scipy \
+                python-numpy \
+                python-pylibmc \
+                python-gdal \
                 libwebp5 \
                 libpng3 \
                 libjpeg62 \
                 libtiff5 \
                 imagemagick \
-                cython3 \
                 gdal-bin \
-                libgdal1i \
-                python3-gdal
+                proj-bin \
+                libgdal1i
 
 #
 # Build python-mapnik form source, since Mapnik's pip package only supports python2,
 # and their official PPA is broken.  Hopefully this will be fixed in ubuntu-16.04
 #
-# WARNING: Very slow!!!, and memory hungry using GCC:
+# WARNING: Very slow!!! Plus memory hungry using GCC:
 #   - 1~2 cores: 8GB
-#   - 4~8 cores: 16GB
-#   - >=16 cores: 32GB
+#   - 4   cores: 16GB
+#   - 16  cores: 32GB
 #
 # Requires freetype2.6 otherwise Google Noto CJK fonts don't get auto hinting.
 
-WORKDIR     /tmp
+WORKDIR     /tmp/build
 
 ENV         FREETYPE_VERSION=VER-2-6-1 \
-            MAPNIK_VERSION=v3.0.8
+            MAPNIK_VERSION=v3.0.9
 
 # Fixes https://github.com/mapnik/mapnik/issues/3090
-COPY        3090-fix.diff ./
+#COPY        3090-fix.diff ./
 
 RUN         set -x \
-            && DEV_PACKAGES="python3-cairo-dev \
+            && apt-get -yq install --no-install-recommends \
+                build-essential \
+                make \
+                automake \
+                pkg-config \
+                libtool \
+                git \
+                python-cairo-dev \
                 libcairo2-dev \
                 libboost-dev \
                 libboost-filesystem-dev \
@@ -92,8 +94,7 @@ RUN         set -x \
                 libfreetype6-dev \
                 libsqlite3-dev \
                 libpq-dev \
-                libxml2-dev" \
-            && apt-get -yq install $DEV_PACKAGES
+                libxml2-dev
 
 RUN         set -x \
             && git clone git://git.sv.nongnu.org/freetype/freetype2.git \
@@ -108,15 +109,16 @@ RUN         set -x \
             && git clone https://github.com/mapnik/mapnik mapnik \
             && cd mapnik \
             && git checkout ${MAPNIK_VERSION} \
-            && git apply /tmp/3090-fix.diff \
             && ./configure \
-            && JOBS=`nproc` && make install \
-            && git clone https://github.com/mapnik/python-mapnik python-mapnik \
+            && ./scons/scons.py --jobs=`nproc` \
+            && make install \
 
+            && git clone https://github.com/mapnik/python-mapnik python-mapnik \
             && cd python-mapnik \
-            && python3.5 setup.py build \
-            && python3.5 setup.py install \
-            && cd /tmp && rm -rvf *
+            && python setup.py install \
+            && rm -rf /tmp/*
+
+WORKDIR     /root
 
 #
 # Patch gdal data files, see:
@@ -124,11 +126,11 @@ RUN         set -x \
 RUN         curl -SL http://cdn.masonmaps.me/dist/gdal-1.11.3/data/esri_extra.wkt > /usr/share/gdal/1.11/esri_extra.wkt
 
 #
-# Install latest Pillow
+# Install latest Pillow & skimage.
+#   In 15.10 python3 is python3.4 but pip3 installs to python3.5 instead
 #
-RUN         pip3 install --upgrade pillow
-
-#
+RUN         python -m pip install --upgrade pillow scikit-image
+#Dockerfile
 # Test mapnik and imagemagick
 #
 RUN         set -x \
@@ -146,7 +148,7 @@ RUN         set -x \
                 print(PIL.PILLOW_VERSION); \
                 print("Pillow Plugins:"); \
                 pprint(PIL._plugins);' > /tmp/test.py \
-            && python3.5 /tmp/test.py \
+            && python /tmp/test.py \
             && convert --version \
             && rm /tmp/test.py
 
