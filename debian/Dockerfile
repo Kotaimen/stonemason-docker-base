@@ -75,10 +75,12 @@ ENV         DEVELOP_PACKAGES \
                 libpq-dev \
                 libxml2-dev
 
+# Packages as of 2016/1
 ENV         BUILD_DIR=/tmp/build \
             FREETYPE_VERSION=2.6.1 \
-            HARFBUZZ_VERSION=1.1.2 \
-            MAPNIK_VERSION=v3.0.9
+            HARFBUZZ_VERSION=1.1.3 \
+            MAPNIK_VERSION=v3.0.9 \
+            PYTHON_MAPNIK_VERSION=db7c1fdb2e970bdc93ab439119465fa5c0df3a07
 
 # Install packages first
 RUN         set -x \
@@ -126,6 +128,7 @@ RUN         set -x \
 RUN         set -x \
             && git clone https://github.com/mapnik/python-mapnik python-mapnik \
             && cd python-mapnik \
+            && git checkout ${PYTHON_MAPNIK_VERSION} \
             && python setup.py install
 
 # Update python pakcages with c binding
