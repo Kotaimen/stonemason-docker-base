@@ -77,7 +77,7 @@ ENV         DEVELOP_PACKAGES \
 
 # Packages as of 2016/1
 ENV         BUILD_DIR=/tmp/build \
-            FREETYPE_VERSION=2.6.1 \
+            FREETYPE_VERSION=2.6.3 \
             HARFBUZZ_VERSION=1.1.3 \
             MAPNIK_VERSION=v3.0.9 \
             PYTHON_MAPNIK_VERSION=db7c1fdb2e970bdc93ab439119465fa5c0df3a07
@@ -106,7 +106,7 @@ RUN         set -x \
 
 # Build harfbuzz
 RUN         set -x \
-            && curl -SL http://www.freedesktop.org/software/harfbuzz/release/harfbuzz-${HARFBUZZ_VERSION}.tar.bz2 | tar xfj - \
+            && curl -SL http://ftp.osuosl.org/pub/blfs/conglomeration/harfbuzz/harfbuzz-${HARFBUZZ_VERSION}.tar.bz2 | tar xfj - \
             && cd harfbuzz-${HARFBUZZ_VERSION} \
             && ./configure \
             && make -j `nproc` \
