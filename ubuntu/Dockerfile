@@ -1,4 +1,4 @@
-FROM        ubuntu-debootstrap:15.10
+FROM        ubuntu:16.04
 MAINTAINER  Kotaimen <kotaimen.c@gmail.com>
 
 ENV         DEBIAN_FRONTEND noninteractive
@@ -50,7 +50,7 @@ ENV         DEPLOY_PACKAGES \
                 python-scipy \
                 python-pylibmc \
                 python-matplotlib \
-#               python-skimage \
+                python-skimage \
                 python-gdal
 
 ENV         DEVELOP_PACKAGES \
@@ -133,13 +133,6 @@ RUN         set -x \
             && ./scons/scons.py --jobs=`nproc` \
             && make install
 
-# Build python-manpik, which don't have release mangement, good luck!
-RUN         set -x \
-            && git clone https://github.com/mapnik/python-mapnik python-mapnik \
-            && cd python-mapnik \
-            && git checkout ${PYTHON_MAPNIK_VERSION} \
-            && python setup.py install
-
 # Update python pakcages with c binding
 RUN         set -x \
             && curl -SL https://bootstrap.pypa.io/get-pip.py | python \
@@ -151,6 +144,14 @@ RUN         set -x \
                 scipy>=0.14.0 \
                 scikit-image>=0.10.0
 
+
+# Build python-manpik, which don't have release mangement, good luck!
+RUN         set -x \
+            && git clone https://github.com/mapnik/python-mapnik python-mapnik \
+            && cd python-mapnik \
+            && git checkout ${PYTHON_MAPNIK_VERSION} \
+            && python setup.py install
+
 # Cleanup and remove develop packages
 RUN         set -x \
             && apt-get -yq remove ${DEVELOP_PACKAGES} \
@@ -158,7 +159,6 @@ RUN         set -x \
             && apt-get -yq install libwebp-dev \
             && rm -rf /var/lib/apt/lists/* \
             && rm -rf ${BUILD_DIR}
-
 
 #
 # Patch gdal data files, see:
