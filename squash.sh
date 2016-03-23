@@ -8,9 +8,9 @@
 #
 
 REPO_NAME=kotaimen
-IMAGE_TAG=stonemason-base:mapnik3.0.9-freetype2.6.3
+IMAGE_TAG=stonemason-base:mapnik3.0.10
 
 docker pull debian:jessie
 
 docker build -t ${IMAGE_TAG} debian
-docker save ${IMAGE_TAG} | sudo TMPDIR=/dev/shm docker-squash -from $(docker images -q debian:jessie) -t ${REPO_NAME}/${IMAGE_TAG} -verbose | docker load
+docker save ${IMAGE_TAG} | sudo TMPDIR=/dev/shm ../docker-squash -from $(docker images -q debian:jessie) -t ${REPO_NAME}/${IMAGE_TAG} -verbose | docker load

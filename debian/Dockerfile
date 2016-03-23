@@ -75,12 +75,12 @@ ENV         DEVELOP_PACKAGES \
                 libpq-dev \
                 libxml2-dev
 
-# Packages as of 2016/1
+# Packages as of 2016/3
 ENV         BUILD_DIR=/tmp/build \
             FREETYPE_VERSION=2.6.3 \
-            HARFBUZZ_VERSION=1.1.3 \
-            MAPNIK_VERSION=v3.0.9 \
-            PYTHON_MAPNIK_VERSION=db7c1fdb2e970bdc93ab439119465fa5c0df3a07
+            HARFBUZZ_VERSION=1.2.1 \
+            MAPNIK_VERSION=v3.0.10 \
+            PYTHON_MAPNIK_VERSION=275bfaec4f022322ba0fd8a64d9961838fe5b11e
 
 # Install packages first
 RUN         set -x \
@@ -106,7 +106,7 @@ RUN         set -x \
 
 # Build harfbuzz
 RUN         set -x \
-            && curl -SL http://ftp.osuosl.org/pub/blfs/conglomeration/harfbuzz/harfbuzz-${HARFBUZZ_VERSION}.tar.bz2 | tar xfj - \
+            && curl -SL https://www.freedesktop.org/software/harfbuzz/release/harfbuzz-${HARFBUZZ_VERSION}.tar.bz2 | tar xfj - \
             && cd harfbuzz-${HARFBUZZ_VERSION} \
             && ./configure \
             && make -j `nproc` \
@@ -118,7 +118,7 @@ RUN         set -x \
 #   - 4   cores: 16GB
 #   - 16  cores: 32GB
 RUN         set -x \
-            && curl -SL http://mapnik.s3.amazonaws.com/dist/v3.0.9/mapnik-${MAPNIK_VERSION}.tar.bz2 | tar xfj - \
+            && curl -SL http://mapnik.s3.amazonaws.com/dist/${MAPNIK_VERSION}/mapnik-${MAPNIK_VERSION}.tar.bz2 | tar xfj - \
             && cd mapnik-${MAPNIK_VERSION} \
             && ./configure \
             && ./scons/scons.py --jobs=`nproc` \
@@ -126,7 +126,7 @@ RUN         set -x \
 
 # Build python-manpik, which don't have release mangement, good luck!
 RUN         set -x \
-            && git clone https://github.com/mapnik/python-mapnik python-mapnik \
+            && git clone --depth=64 https://github.com/mapnik/python-mapnik python-mapnik \
             && cd python-mapnik \
             && git checkout ${PYTHON_MAPNIK_VERSION} \
             && python setup.py install
@@ -154,7 +154,7 @@ RUN         set -x \
 #
 # Patch gdal data files, see:
 #   https://launchpad.net/ubuntu/trusty/+source/gdal/+copyright
-RUN         curl -SL http://cdn.masonmaps.me/dist/gdal-1.11.3/data/esri_extra.wkt > /usr/share/gdal/1.10/esri_extra.wkt
+RUN         curl -SL http://cdn.knrdesign.co/dist/gdal-1.11.3/data/esri_extra.wkt > /usr/share/gdal/1.10/esri_extra.wkt
 
 #
 # Set locale
